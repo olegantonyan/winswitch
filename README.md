@@ -11,6 +11,19 @@ On a PC keyboard, ⌘ is the **Alt** key.
 
 ## Install
 
+### Download
+
+Get `WinSwitch-x.y.z.dmg` from [Releases](https://github.com/olegantonyan/winswitch/releases), open it
+and drag WinSwitch to Applications.
+
+The app is not notarized by Apple, so macOS blocks the first start. Open System Settings →
+Privacy & Security and click **Open Anyway**. Or run `xattr -dr com.apple.quarantine /Applications/WinSwitch.app`.
+
+After you update to a new version, the old Accessibility permission does not work any more.
+Run `tccutil reset Accessibility local.winswitch`, start WinSwitch and turn the permission on again.
+
+### Build from source
+
 ```sh
 make install    # build, sign, copy to /Applications, start
 ```
@@ -65,11 +78,16 @@ The settings are saved in `defaults read local.winswitch`.
 ```sh
 make bundle     # build build/WinSwitch.app
 make run        # run in the terminal and show logs
+make dmg        # build build/WinSwitch.dmg
 make clean
 build/WinSwitch.app/Contents/MacOS/WinSwitch --list   # print the window list
 ```
 
 When you start it from a terminal, macOS uses the terminal's permission, not WinSwitch's.
+
+To make a release, push a tag: `git tag v1.2.0 && git push origin v1.2.0`. GitHub Actions
+(`.github/workflows/build-dmg.yml`) builds `WinSwitch-1.2.0.dmg` (Apple silicon and Intel, ad-hoc signed)
+and adds it to a new release. Every push and pull request also builds the DMG; download it from the run's artifacts.
 
 Files in `Sources/WinSwitch/`:
 

@@ -1,0 +1,45 @@
+name: Build DMG
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write # create the release on tag push
+
+jobs:
+  dmg:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Version from tag
+        id: version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Ad-hoc signed (SIGN_ID=-), universal binary for Apple silicon and Intel.
+      - name: Build DMG
+        run: make dmg SIGN_ID=- ARCHS="arm64 x86_64" VERSION="${{ steps.version.outputs.version }}"
+
+      - name: Check app
+        run: |
+          lipo -archs build/WinSwitch.app/Contents/MacOS/WinSwitch
+          codesign --verify --deep --strict --verbose=2 build/WinSwitch.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WinSwitch-dmg
+          path: build/*.dmg
+          if-no-files-found: error
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" build/WinSwitch-*.dmg --generate-notes
